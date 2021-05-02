@@ -34,57 +34,66 @@ public class CheckSlot {
         //Date checkDate = df.parse("03-05-2021");
         Date checkDate = new Date();
         String modifiedURL = mainUrl.replace("XXX", districtID) + "" + df.format(checkDate);
-
+        System.out.println(modifiedURL);
         URL url = new URL(modifiedURL);
+        String oldMessage = "";
         while (true) {
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.connect();
-            Scanner sc = new Scanner(url.openStream());
-            StringBuilder input = new StringBuilder("");
-            while (sc.hasNext()) {
-                input.append(sc.nextLine());
-            }
+            {
 
-            sc.close();
-            JSONParser parse = new JSONParser();
-            JSONObject jObj = (JSONObject) parse.parse(input.toString());
-            JSONArray centers = (JSONArray) jObj.get("centers");
-            Iterator<JSONObject> centerItr = centers.iterator();
-            while (centerItr.hasNext()) {
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.connect();
+                Scanner sc = new Scanner(url.openStream());
+                StringBuilder input = new StringBuilder("");
+                while (sc.hasNext()) {
+                    input.append(sc.nextLine());
+                }
 
-                JSONObject centerObj = centerItr.next();
+                sc.close();
+                JSONParser parse = new JSONParser();
+                JSONObject jObj = (JSONObject) parse.parse(input.toString());
+                JSONArray centers = (JSONArray) jObj.get("centers");
+                Iterator<JSONObject> centerItr = centers.iterator();
+                while (centerItr.hasNext()) {
 
-                JSONArray sessions = (JSONArray) centerObj.get("sessions");
+                    JSONObject centerObj = centerItr.next();
 
-                Iterator<JSONObject> sessionItr = sessions.iterator();
-                while (sessionItr.hasNext()) {
-                    JSONObject sessionObj = sessionItr.next();
-                    long age = (Long) sessionObj.get("min_age_limit");
-                    long availability = (Long) sessionObj.get("available_capacity");
-                    if (availability >= minAvailability && age == ageLimit) {
-                        flag = true;
-                        message.append("\n");
-                        String centerID = centerObj.get("center_id").toString();
-                        String name = centerObj.get("name").toString();
-                        String date = sessionObj.get("date").toString();
-                        String pincode = centerObj.get("pincode").toString();
-                        String blockName = centerObj.get("block_name").toString();
-                        message.append(centerID + " : " + name + " -- " + blockName +" --- " + "pincode --- " + pincode + " ---- " + date + "-- Slots - ");
-                        message.append(sessionObj.get("available_capacity"));
+                    JSONArray sessions = (JSONArray) centerObj.get("sessions");
+
+                    Iterator<JSONObject> sessionItr = sessions.iterator();
+                    while (sessionItr.hasNext()) {
+                        JSONObject sessionObj = sessionItr.next();
+                        long age = (Long) sessionObj.get("min_age_limit");
+                        long availability = (Long) sessionObj.get("available_capacity");
+                        if (availability >= minAvailability && age == ageLimit) {
+                            flag = true;
+                            message.append("\n");
+                            String centerID = centerObj.get("center_id").toString();
+                            String name = centerObj.get("name").toString();
+                            String date = sessionObj.get("date").toString();
+                            String pincode = centerObj.get("pincode").toString();
+                            String blockName = centerObj.get("block_name").toString();
+                            message.append("\n-----------------------------------------------------\n");
+                            message.append(centerID + " : " + name + " --- " + date + "-- Slots - ");
+                            message.append(sessionObj.get("available_capacity"));
+                            message.append("\n" + pincode + " : " + blockName);
+                            message.append("\n-----------------------------------------------------\n");
+                        }
 
                     }
-
+                }
+                if (flag) {
+                    if (!oldMessage.equals(message.toString())) {
+                        sendEmail(message, emailId, password, toEmailId);
+                    }
+                    oldMessage = message.toString();
+                    flag = false;
+                    message = new StringBuilder("");
+                    //System.exit(1);
                 }
             }
-            if (flag) {
-                sendEmail(message, emailId, password, toEmailId);
-                message = new StringBuilder("");
-                flag = false;
-            }
             System.out.print(".");
-            Thread.sleep(150000);
-
+            Thread.sleep(300000);
         }
     }
 
